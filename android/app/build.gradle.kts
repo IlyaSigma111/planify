@@ -17,6 +17,15 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("planify-key.jks")
+            storePassword = "planify123"
+            keyAlias = "planify"
+            keyPassword = "planify123"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -24,6 +33,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
