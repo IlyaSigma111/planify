@@ -153,43 +153,43 @@ fun GraphView(state: AppState, vm: MainViewModel) {
             )
         }.toMutableList()
     }
-
     Box(modifier = Modifier.fillMaxSize()) {
-        Canvas(modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    val hit = nodes.find { n ->
-                        val dx = offset.x - n.x; val dy = offset.y - n.y
-                        Math.sqrt((dx * dx + dy * dy).toDouble()) < nodeSize
-                    }
-                    if (hit != null) {
-                        when (hit.type) {
-                            LinkNodeType.NOTE -> {
-                                val note = state.notes.find { it.id == hit.id }
-                                if (note != null) vm.openNote(note)
-                            }
-                            LinkNodeType.TASK -> {}
-                        }
-                    }
-                }
-            }
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDrag = { change, dragAmount ->
-                        change.consume()
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(nodes) {
+                    detectTapGestures { offset ->
                         val hit = nodes.find { n ->
-                            val dx = change.position.x - n.x; val dy = change.position.y - n.y
+                            val dx = offset.x - n.x; val dy = offset.y - n.y
                             Math.sqrt((dx * dx + dy * dy).toDouble()) < nodeSize
                         }
                         if (hit != null) {
-                            hit.x += dragAmount.x
-                            hit.y += dragAmount.y
-                            vm.updateNodePosition(hit.id, hit.type, hit.x, hit.y)
+                            when (hit.type) {
+                                LinkNodeType.NOTE -> {
+                                    val note = state.notes.find { it.id == hit.id }
+                                    if (note != null) vm.openNote(note)
+                                }
+                                LinkNodeType.TASK -> {}
+                            }
                         }
                     }
-                )
-            }
+                }
+                .pointerInput(nodes) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            val hit = nodes.find { n ->
+                                val dx = change.position.x - n.x; val dy = change.position.y - n.y
+                                Math.sqrt((dx * dx + dy * dy).toDouble()) < nodeSize
+                            }
+                            if (hit != null) {
+                                hit.x += dragAmount.x
+                                hit.y += dragAmount.y
+                                vm.updateNodePosition(hit.id, hit.type, hit.x, hit.y)
+                            }
+                        }
+                    )
+                }
         ) {
             val linkColor = Primary.copy(alpha = 0.25f)
             for (link in state.graphLinks) {
@@ -208,23 +208,8 @@ fun GraphView(state: AppState, vm: MainViewModel) {
                 drawCircle(color = c.copy(alpha = 0.15f), radius = r + 8f, center = Offset(n.x, n.y))
                 drawCircle(color = c, radius = r, center = Offset(n.x, n.y), style = Stroke(width = 2f))
                 drawCircle(color = c.copy(alpha = 0.12f), radius = r, center = Offset(n.x, n.y))
-                val label = if (n.title.length > 8) n.title.take(8) + ".." else n.title
-                drawContext.canvas.nativeCanvas.apply {
-                    val paint = org.jetbrains.skia.Paint().apply {
-                        color = org.jetbrains.skia.Color.makeRGB(200, 200, 208)
-                    }
-                    val font = org.jetbrains.skia.Font().apply { size = 11f }
-                    drawString(label, n.x - font.measureTextWidth(label) / 2, n.y + 4f, font, paint)
-                }
             }
         }
-
-        Text(
-            "Drag nodes · Click to open",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
-        )
     }
 }
 
