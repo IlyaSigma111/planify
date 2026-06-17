@@ -143,7 +143,8 @@ fun AppContent(viewModel: MainViewModel, state: AppState) {
 // ===== GRAPH VIEW =====
 @Composable
 fun GraphView(state: AppState, vm: MainViewModel) {
-    val nodeSize = 28f
+    val hitR = 44f
+    var dragNode by remember { mutableStateOf<GraphNodeRender?>(null) }
     val nodes = remember(state.graphNodes) {
         state.graphNodes.map { n ->
             GraphNodeRender(
@@ -153,16 +154,17 @@ fun GraphView(state: AppState, vm: MainViewModel) {
             )
         }.toMutableList()
     }
+    fun hitNode(pos: Offset) = nodes.find { n ->
+        val dx = pos.x - n.x; val dy = pos.y - n.y
+        Math.sqrt((dx * dx + dy * dy).toDouble()) < hitR
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(nodes) {
                     detectTapGestures { offset ->
-                        val hit = nodes.find { n ->
-                            val dx = offset.x - n.x; val dy = offset.y - n.y
-                            Math.sqrt((dx * dx + dy * dy).toDouble()) < nodeSize
-                        }
+                        val hit = hitNode(offset)
                         if (hit != null) {
                             when (hit.type) {
                                 LinkNodeType.NOTE -> {
@@ -176,18 +178,19 @@ fun GraphView(state: AppState, vm: MainViewModel) {
                 }
                 .pointerInput(nodes) {
                     detectDragGestures(
+                        onDragStart = { offset -> dragNode = hitNode(offset) },
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            val hit = nodes.find { n ->
-                                val dx = change.position.x - n.x; val dy = change.position.y - n.y
-                                Math.sqrt((dx * dx + dy * dy).toDouble()) < nodeSize
-                            }
+                            val hit = dragNode ?: hitNode(change.position)
                             if (hit != null) {
+                                dragNode = hit
                                 hit.x += dragAmount.x
                                 hit.y += dragAmount.y
                                 vm.updateNodePosition(hit.id, hit.type, hit.x, hit.y)
                             }
-                        }
+                        },
+                        onDragEnd = { dragNode = null },
+                        onDragCancel = { dragNode = null }
                     )
                 }
         ) {
