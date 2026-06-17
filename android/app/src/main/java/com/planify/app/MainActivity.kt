@@ -1,25 +1,35 @@
 package com.planify.app
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Article
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material.icons.filled.ViewKanban
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -50,16 +60,30 @@ import com.planify.app.ui.screens.BoardScreen
 import com.planify.app.ui.screens.NoteEditorScreen
 import com.planify.app.ui.screens.SearchScreen
 import com.planify.app.ui.theme.PlanifyTheme
+import com.planify.app.viewmodel.AppLanguage
 import com.planify.app.viewmodel.MainViewModel
 import com.planify.app.viewmodel.Screen
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = newBase.getSharedPreferences("planify_prefs", Context.MODE_PRIVATE)
+        val langCode = prefs.getString("language", "en") ?: "en"
+        val locale = Locale(langCode)
+        Locale.setDefault(locale)
+        val config = Configuration(newBase.resources.configuration)
+        config.setLocale(locale)
+        super.attachBaseContext(newBase.createConfigurationContext(config))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             PlanifyTheme {
-                PlanifyApp()
+                PlanifyApp(
+                    onLanguageChange = { recreate() }
+                )
             }
         }
     }
@@ -67,7 +91,10 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
+fun PlanifyApp(
+    onLanguageChange: () -> Unit = {},
+    viewModel: MainViewModel = viewModel()
+) {
     val state by viewModel.state.collectAsState()
 
     var showNewNoteDialog by remember { mutableStateOf(false) }
@@ -81,12 +108,12 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
     if (showNewNoteDialog) {
         AlertDialog(
             onDismissRequest = { showNewNoteDialog = false },
-            title = { Text("New Note") },
+            title = { Text(getStringRes("new_note")) },
             text = {
                 OutlinedTextField(
                     value = newNoteTitle,
                     onValueChange = { newNoteTitle = it },
-                    placeholder = { Text("Note title") },
+                    placeholder = { Text(getStringRes("note_title")) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -99,13 +126,13 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         newNoteTitle = ""
                         showNewNoteDialog = false
                     }
-                }) { Text("Create") }
+                }) { Text(getStringRes("create")) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     newNoteTitle = ""
                     showNewNoteDialog = false
-                }) { Text("Cancel") }
+                }) { Text(getStringRes("cancel")) }
             }
         )
     }
@@ -113,13 +140,13 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
     if (showNewTaskDialog) {
         AlertDialog(
             onDismissRequest = { showNewTaskDialog = false },
-            title = { Text("New Task") },
+            title = { Text(getStringRes("new_task")) },
             text = {
                 Column {
                     OutlinedTextField(
                         value = newTaskTitle,
                         onValueChange = { newTaskTitle = it },
-                        placeholder = { Text("Task title") },
+                        placeholder = { Text(getStringRes("task_title")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -128,7 +155,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                     OutlinedTextField(
                         value = newTaskDesc,
                         onValueChange = { newTaskDesc = it },
-                        placeholder = { Text("Description (optional)") },
+                        placeholder = { Text(getStringRes("description_optional")) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         maxLines = 3
@@ -143,16 +170,109 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         newTaskDesc = ""
                         showNewTaskDialog = false
                     }
-                }) { Text("Create") }
+                }) { Text(getStringRes("create")) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     newTaskTitle = ""
                     newTaskDesc = ""
                     showNewTaskDialog = false
-                }) { Text("Cancel") }
+                }) { Text(getStringRes("cancel")) }
             }
         )
+    }
+
+    // Settings screen for language
+    if (state.currentScreen == Screen.SETTINGS) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text(getStringRes("settings")) },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.navigateTo(Screen.GRAPH) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = getStringRes("language"),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            viewModel.setLanguage(AppLanguage.ENGLISH)
+                            onLanguageChange()
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (state.language == AppLanguage.ENGLISH)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = getStringRes("english"),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            viewModel.setLanguage(AppLanguage.RUSSIAN)
+                            onLanguageChange()
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (state.language == AppLanguage.RUSSIAN)
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = getStringRes("russian"),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        }
+        return
     }
 
     Scaffold(
@@ -162,12 +282,18 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                     Text(
                         text = when (state.currentScreen) {
                             Screen.GRAPH -> "Planify"
-                            Screen.BOARD -> "Board"
-                            Screen.NOTE_EDITOR -> "Note"
-                            Screen.SEARCH -> "Search"
+                            Screen.BOARD -> getStringRes("board_view")
+                            Screen.NOTE_EDITOR -> getStringRes("note_editor")
+                            Screen.SEARCH -> getStringRes("search")
+                            else -> "Planify"
                         },
                         style = MaterialTheme.typography.titleLarge
                     )
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.openSettings() }) {
+                        Icon(Icons.Default.Settings, contentDescription = getStringRes("settings"))
+                    }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -175,7 +301,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
             )
         },
         bottomBar = {
-            if (state.currentScreen != Screen.NOTE_EDITOR) {
+            if (state.currentScreen != Screen.NOTE_EDITOR && state.currentScreen != Screen.SETTINGS) {
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.surface,
                     tonalElevation = 0.dp
@@ -184,7 +310,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         selected = state.currentScreen == Screen.GRAPH,
                         onClick = { viewModel.navigateTo(Screen.GRAPH) },
                         icon = { Icon(Icons.Default.Hub, contentDescription = null) },
-                        label = { Text("Graph") },
+                        label = { Text(getStringRes("graph_view")) },
                         colors = NavigationBarItemDefaults.colors(
                             indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
@@ -193,7 +319,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         selected = state.currentScreen == Screen.BOARD,
                         onClick = { viewModel.navigateTo(Screen.BOARD) },
                         icon = { Icon(Icons.Default.ViewKanban, contentDescription = null) },
-                        label = { Text("Board") },
+                        label = { Text(getStringRes("board_view")) },
                         colors = NavigationBarItemDefaults.colors(
                             indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
@@ -202,7 +328,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         selected = state.currentScreen == Screen.SEARCH,
                         onClick = { viewModel.navigateTo(Screen.SEARCH) },
                         icon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        label = { Text("Search") },
+                        label = { Text(getStringRes("search")) },
                         colors = NavigationBarItemDefaults.colors(
                             indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
                         )
@@ -217,7 +343,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         onClick = { showNewNoteDialog = true },
                         containerColor = MaterialTheme.colorScheme.primary
                     ) {
-                        Icon(Icons.Default.Article, contentDescription = "New note")
+                        Icon(Icons.Default.Article, contentDescription = getStringRes("new_note"))
                     }
                 }
                 Screen.BOARD -> {
@@ -228,7 +354,7 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         },
                         containerColor = MaterialTheme.colorScheme.primary
                     ) {
-                        Icon(Icons.Default.TaskAlt, contentDescription = "New task")
+                        Icon(Icons.Default.TaskAlt, contentDescription = getStringRes("new_task"))
                     }
                 }
                 else -> {}
@@ -313,7 +439,15 @@ fun PlanifyApp(viewModel: MainViewModel = viewModel()) {
                         onBack = { viewModel.closeNote() }
                     )
                 }
+                Screen.SETTINGS -> {}
             }
         }
     }
+}
+
+@Composable
+fun getStringRes(name: String): String {
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    val id = res.getIdentifier(name, "string", androidx.compose.ui.platform.LocalContext.current.packageName)
+    return if (id != 0) res.getString(id) else name
 }

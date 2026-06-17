@@ -1,0 +1,24 @@
+{
+  "name": "Planify Web",
+  "short_name": "Planify",
+  "description": "Notes, tasks & graph — offline web app",
+  "start_url": "/planify/web/",
+  "scope": "/planify/web/",
+  "display": "standalone",
+  "background_color": "#05050A",
+  "theme_color": "#8B5CF6",
+  "icons": [
+    {
+      "src": "/planify/docs/assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/planify/docs/assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

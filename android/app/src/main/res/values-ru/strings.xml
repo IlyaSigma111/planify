@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Planify</string>
+    <string name="graph_view">Граф</string>
+    <string name="board_view">Доска</string>
+    <string name="search">Поиск</string>
+    <string name="new_note">Новая заметка</string>
+    <string name="new_task">Новая задача</string>
+    <string name="save">Сохранить</string>
+    <string name="delete">Удалить</string>
+    <string name="cancel">Отмена</string>
+    <string name="create">Создать</string>
+    <string name="edit">Редактировать</string>
+    <string name="preview">Просмотр</string>
+    <string name="note_editor">Заметка</string>
+    <string name="todo">К выполнению</string>
+    <string name="in_progress">В процессе</string>
+    <string name="done">Готово</string>
+    <string name="empty_note">Пустая заметка</string>
+    <string name="write_markdown_hint">Пишите в Markdown... Используйте [[Название]] для связи заметок</string>
+    <string name="search_placeholder">Поиск заметок и задач...</string>
+    <string name="no_results">Ничего не найдено</string>
+    <string name="results_count">%d результат(ов)</string>
+    <string name="delete_confirm_title">Удалить заметку</string>
+    <string name="delete_confirm_message">Вы уверены, что хотите удалить \"%s\"?</string>
+    <string name="settings">Настройки</string>
+    <string name="language">Язык</string>
+    <string name="english">English</string>
+    <string name="russian">Русский</string>
+    <string name="theme">Тема</string>
+    <string name="dark">Тёмная</string>
+    <string name="light">Светлая</string>
+    <string name="system">Системная</string>
+    <string name="add_task">Добавить задачу</string>
+    <string name="task_title">Название задачи</string>
+    <string name="description_optional">Описание (необязательно)</string>
+    <string name="note_title">Название заметки</string>
+    <string name="are_you_sure_delete">Вы уверены, что хотите удалить?</string>
+</resources>

@@ -14,11 +14,16 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 enum class Screen {
-    GRAPH, BOARD, NOTE_EDITOR, SEARCH
+    GRAPH, BOARD, NOTE_EDITOR, SEARCH, SETTINGS
+}
+
+enum class AppLanguage(val code: String) {
+    ENGLISH("en"), RUSSIAN("ru")
 }
 
 data class AppState(
     val currentScreen: Screen = Screen.GRAPH,
+    val language: AppLanguage = AppLanguage.ENGLISH,
     // Graph
     val graphNodes: List<Repository.GraphNode> = emptyList(),
     val graphLinks: List<Link> = emptyList(),
@@ -57,6 +62,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val db = AppDatabase.getInstance(application)
         repository = Repository(db.noteDao(), db.taskDao(), db.linkDao())
 
+        val prefs = application.getSharedPreferences("planify_prefs", android.content.Context.MODE_PRIVATE)
+        val savedLang = prefs.getString("language", "en")
+        val initialLang = if (savedLang == "ru") AppLanguage.RUSSIAN else AppLanguage.ENGLISH
+        _state.update { it.copy(language = initialLang) }
+
         viewModelScope.launch {
             combine(
                 repository.allNotes,
@@ -85,6 +95,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun navigateTo(screen: Screen) {
         _state.update { it.copy(currentScreen = screen) }
+    }
+
+    fun openSettings() {
+        _state.update { it.copy(currentScreen = Screen.SETTINGS) }
+    }
+
+    fun setLanguage(language: AppLanguage) {
+        _state.update { it.copy(language = language) }
+        val prefs = getApplication<android.app.Application>()
+            .getSharedPreferences("planify_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("language", language.code).apply()
     }
 
     // ---- Notes ----

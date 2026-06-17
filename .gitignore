@@ -1,14 +1,29 @@
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+# Gradle
+.gradle/
 */build/
-app/build/
+
+# IDE
+.idea/
+*.iml
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+android/app/build/
+android/app/release/
+
+# Desktop
+desktop/build/
+
+# Build artifacts
 *.apk
 *.aab
+*.dmg
+*.msi
+*.deb
+
+# Node
+node_modules/

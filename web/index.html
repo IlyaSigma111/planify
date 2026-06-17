@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Planify — Web</title>
+<meta name="description" content="Planify web app - offline notes, tasks & graph">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root{--primary:#8B5CF6;--cyan:#22D3EE;--amber:#F59E0B;--bg:#05050A;--surface:#0F0F1A;--card:#1A1A2E;--text:#F0F0F5;--text2:#8888A0;--brd:rgba(139,92,246,0.15);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh;display:flex;flex-direction:column}
+nav{display:flex;align-items:center;padding:10px 16px;background:rgba(5,5,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--brd);-webkit-app-region:drag;flex-shrink:0}
+nav .logo{font-weight:800;font-size:1.1rem;display:flex;align-items:center;gap:6px}
+nav .logo i{color:var(--primary);font-size:.9rem}
+nav .spacer{flex:1}
+nav button{background:rgba(139,92,246,.1);border:1px solid var(--brd);color:var(--text);padding:5px 12px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-left:6px;-webkit-app-region:no-drag}
+nav button:hover{background:rgba(139,92,246,.2)}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--brd);flex-shrink:0;overflow-x:auto}
+.tab{padding:10px 18px;font-size:.82rem;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;display:flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text);background:rgba(255,255,255,.02)}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);background:rgba(139,92,246,.05)}
+.panel{display:none;flex:1;overflow:hidden}
+.panel.active{display:flex;flex-direction:column}
+
+/* Notes */
+.notes-split{display:flex;flex:1;overflow:hidden}
+.notes-side{width:200px;border-right:1px solid var(--brd);overflow-y:auto;padding:8px;flex-shrink:0}
+.notes-side .ni{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:500;margin-bottom:2px;transition:background .1s}
+.notes-side .ni:hover{background:rgba(139,92,246,.08)}
+.notes-side .ni.active{background:rgba(139,92,246,.15);color:var(--primary)}
+.notes-side .ni small{display:block;font-size:.68rem;color:var(--text2);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notes-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.notes-main input{background:transparent;border:none;color:var(--text);font-size:1.15rem;font-weight:700;padding:12px 16px 4px;outline:none;width:100%;font-family:'Inter',sans-serif}
+.notes-main textarea{flex:1;background:rgba(255,255,255,.02);border:none;border-top:1px solid var(--brd);color:var(--text);font-size:.85rem;padding:12px 16px;outline:none;font-family:'Inter',sans-serif;line-height:1.7;resize:none;width:100%}
+.notes-main textarea::placeholder{color:var(--text2)}
+.notes-preview{flex:1;overflow-y:auto;padding:16px;font-size:.85rem;line-height:1.8}
+.notes-preview h1{font-size:1.4rem;font-weight:700;margin:12px 0 6px}
+.notes-preview h2{font-size:1.1rem;font-weight:700;margin:10px 0 4px}
+.notes-preview p{margin:4px 0}
+.notes-preview ul{padding-left:18px;margin:4px 0}
+.notes-preview code{background:rgba(139,92,246,.1);padding:1px 5px;border-radius:3px;font-size:.78rem}
+.notes-preview blockquote{border-left:3px solid var(--primary);padding:4px 12px;margin:6px 0;background:rgba(139,92,246,.04);color:var(--text2)}
+.notes-preview .wlk{color:var(--cyan);text-decoration:underline;cursor:pointer}
+.notes-preview pre{background:rgba(255,255,255,.03);padding:10px;border-radius:6px;overflow-x:auto;margin:6px 0;border:1px solid var(--brd)}
+
+/* Board */
+.board-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px;flex:1;overflow:hidden}
+.board-col{border:1px solid var(--brd);border-radius:8px;padding:8px;display:flex;flex-direction:column;overflow:hidden;background:rgba(255,255,255,.02)}
+.board-col h3{font-size:.78rem;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;padding:0 4px;flex-shrink:0}
+.board-col h3 span{color:var(--text2);font-weight:400;font-size:.75rem}
+.board-list{flex:1;overflow-y:auto;padding:2px}
+.bc{padding:8px 10px;background:var(--card);border:1px solid var(--brd);border-radius:6px;margin-bottom:4px;cursor:grab;font-size:.8rem}
+.bc:hover{border-color:rgba(139,92,246,.2)}
+.bc .bt{font-weight:600;margin-bottom:1px}
+.bc .bd{font-size:.72rem;color:var(--text2)}
+.bc .ba{display:flex;gap:2px;margin-top:4px;justify-content:flex-end}
+.bc .ba button{background:rgba(255,255,255,.03);border:none;color:var(--text2);padding:2px 6px;border-radius:3px;cursor:pointer;font-size:.65rem}
+.bc .ba button:hover{background:rgba(139,92,246,.15);color:var(--primary)}
+
+/* Graph */
+.graph-wrap{flex:1;position:relative;background:radial-gradient(ellipse at center,rgba(139,92,246,.03),transparent)}
+.graph-wrap canvas{width:100%;height:100%;display:block}
+.graph-wrap .gi{position:absolute;bottom:8px;left:8px;font-size:.68rem;color:var(--text2);background:rgba(5,5,10,.8);padding:4px 10px;border-radius:5px}
+
+/* Search */
+.search-p{max-width:480px;margin:20px auto;width:100%;padding:0 16px}
+.search-p input{width:100%;background:rgba(255,255,255,.03);border:1px solid var(--brd);border-radius:8px;padding:10px 14px;color:var(--text);font-size:.88rem;outline:none;font-family:'Inter',sans-serif}
+.search-p input:focus{border-color:var(--primary)}
+.sr{margin-top:8px}
+.sri{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:6px;cursor:pointer;transition:background .1s}
+.sri:hover{background:rgba(139,92,246,.06)}
+.sri .ic{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0}
+.sri .ic.n{background:rgba(139,92,246,.12);color:var(--primary)}
+.sri .ic.t{background:rgba(245,158,11,.12);color:var(--amber)}
+.sri .inf{flex:1}
+.sri .inf .t{font-weight:600;font-size:.82rem}
+.sri .inf .s{color:var(--text2);font-size:.75rem}
+.sri .tag{font-size:.65rem;color:var(--text2);background:rgba(255,255,255,.04);padding:2px 7px;border-radius:3px}
+
+@media(max-width:600px){.notes-side{width:100%;max-height:120px;border-right:none;border-bottom:1px solid var(--brd);display:flex;gap:4px;overflow-x:auto;padding:6px 8px}.notes-side .ni{white-space:nowrap;flex-shrink:0;margin-bottom:0}.notes-side .ni small{display:none}.board-cols{grid-template-columns:1fr;overflow-y:auto}}
+</style>
+</head>
+<body>
+
+<nav>
+<div class="logo"><i class="fas fa-asterisk"></i> Planify</div>
+<div class="spacer"></div>
+<button onclick="saveToFile()"><i class="fas fa-download"></i> Export</button>
+<button onclick="loadFromFile()"><i class="fas fa-upload"></i> Import</button>
+<button onclick="toggleLang()" id="langBtn">RU</button>
+</nav>
+
+<div class="tabs" id="tabs">
+<div class="tab active" onclick="showTab('notes')"><i class="fas fa-pen-fancy"></i> Notes</div>
+<div class="tab" onclick="showTab('board')"><i class="fas fa-columns"></i> Board</div>
+<div class="tab" onclick="showTab('graph')"><i class="fas fa-project-diagram"></i> Graph</div>
+<div class="tab" onclick="showTab('search')"><i class="fas fa-search"></i> Search</div>
+</div>
+
+<!-- Notes -->
+<div class="panel active" id="panel-notes">
+<div class="notes-split">
+<div class="notes-side" id="noteList"></div>
+<div class="notes-main">
+<input id="noteTitle" placeholder="Note title...">
+<textarea id="noteContent" placeholder="Write in markdown... [[Title]] for links"></textarea>
+</div>
+</div>
+</div>
+
+<!-- Board -->
+<div class="panel" id="panel-board">
+<div class="board-cols" id="boardCols">
+<div class="board-col"><h3><i class="fas fa-circle" style="color:#60A5FA;font-size:.55rem"></i> To Do <span id="c0"></span></h3><div class="board-list" id="bl0"></div></div>
+<div class="board-col"><h3><i class="fas fa-circle" style="color:#FBBF24;font-size:.55rem"></i> In Progress <span id="c1"></span></h3><div class="board-list" id="bl1"></div></div>
+<div class="board-col"><h3><i class="fas fa-circle" style="color:#34D399;font-size:.55rem"></i> Done <span id="c2"></span></h3><div class="board-list" id="bl2"></div></div>
+</div>
+</div>
+
+<!-- Graph -->
+<div class="panel" id="panel-graph">
+<div class="graph-wrap" id="graphWrap"><canvas id="graphCanvas"></canvas><div class="gi" id="graphInfo">Drag · Zoom · Click</div></div>
+</div>
+
+<!-- Search -->
+<div class="panel" id="panel-search">
+<div class="search-p"><input id="searchInput" placeholder="Search..." oninput="doSearch(this.value)"><div class="sr" id="searchRes"></div></div>
+</div>
+
+<script>
+// ===== Persistence =====
+const STORAGE_KEY = 'planify_data';
+let data;
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { data = JSON.parse(raw); return; }
+  } catch(e) {}
+  data = {
+    notes: [
+      {id:1,title:"Welcome",content:"# Welcome to Planify!\n\n**Edit** this note\nCreate [[New Idea]]\n\n> 100% offline"},
+      {id:2,title:"New Idea",content:"## Ideas\n\n- Calendar\n- PDF export\n\nSee [[Welcome]]"}
+    ],
+    tasks: [
+      {id:1,title:"Design",desc:"Figma mockup",col:"todo"},
+      {id:2,title:"API",desc:"REST endpoints",col:"todo"},
+      {id:3,title:"CI/CD",desc:"GitHub Actions",col:"progress"},
+      {id:4,title:"Tests",desc:"Jest + RTL",col:"done"}
+    ],
+    links: [{s:1,t:2}],
+    nextId: {note:10,task:10},
+    lang: 'en'
+  };
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+loadData();
+let selNote = 0;
+let currentLang = data.lang || 'en';
+document.getElementById('langBtn').textContent = currentLang === 'en' ? 'RU' : 'EN';
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'ru' : 'en';
+  data.lang = currentLang;
+  document.getElementById('langBtn').textContent = currentLang === 'en' ? 'RU' : 'EN';
+  saveData();
+  renderNotes();
+  updatePlaceholders();
+}
+function updatePlaceholders() {
+  document.getElementById('noteContent').placeholder = currentLang === 'ru' ?
+    'Пишите в Markdown... [[Название]] для связей' : 'Write in markdown... [[Title]] for links';
+  document.getElementById('searchInput').placeholder = currentLang === 'ru' ? 'Поиск...' : 'Search...';
+}
+updatePlaceholders();
+
+// ===== Notes =====
+function renderNotes() {
+  const list = document.getElementById('noteList');
+  const notes = data.notes;
+  list.innerHTML = notes.map((n,i) =>
+    `<div class="ni${i===selNote?' active':''}" onclick="selN(${i})">
+      ${n.title}
+      <small>${n.content.split('\n')[0].replace(/[#*`>\[\]]/g,'').trim().slice(0,30)}</small>
+    </div>`
+  ).join('');
+  if (selNote >= 0 && selNote < notes.length) {
+    document.getElementById('noteTitle').value = notes[selNote].title;
+    document.getElementById('noteContent').value = notes[selNote].content;
+  }
+}
+
+function selN(i) { selNote = i; renderNotes(); }
+
+// Auto-save notes
+let saveTimer;
+document.getElementById('noteTitle').addEventListener('input', () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveCurrentNote, 300); });
+document.getElementById('noteContent').addEventListener('input', () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveCurrentNote, 300); });
+
+function saveCurrentNote() {
+  if (selNote < 0 || selNote >= data.notes.length) return;
+  data.notes[selNote].title = document.getElementById('noteTitle').value || 'Untitled';
+  data.notes[selNote].content = document.getElementById('noteContent').value;
+  processWikilinks(data.notes[selNote].id, data.notes[selNote].content);
+  saveData();
+  renderNotes();
+  renderGraph();
+}
+
+function processWikilinks(noteId, content) {
+  const pattern = /\[\[([^\]]+)\]\]/g;
+  let m;
+  while ((m = pattern.exec(content)) !== null) {
+    const target = data.notes.find(n => n.title === m[1].trim());
+    if (target && !data.links.find(l => l.s === noteId && l.t === target.id)) {
+      data.links.push({s: noteId, t: target.id});
+    }
+  }
+}
+
+// ===== Board =====
+function renderBoard() {
+  const cols = ['todo','progress','done'];
+  cols.forEach((c,i) => {
+    const items = data.tasks.filter(t => t.col === c);
+    document.getElementById('c'+i).textContent = items.length;
+    document.getElementById('bl'+i).innerHTML = items.map(t =>
+      `<div class="bc" draggable="true" data-id="${t.id}">
+        <div class="bt">${t.title}</div>
+        ${t.desc ? `<div class="bd">${t.desc}</div>` : ''}
+        <div class="ba">
+          <button onclick="mvT(${t.id},-1)">◀</button>
+          <button onclick="mvT(${t.id},1)">▶</button>
+          <button onclick="delT(${t.id})">✕</button>
+        </div>
+      </div>`
+    ).join('');
+  });
+}
+
+function mvT(id, dir) {
+  const t = data.tasks.find(x => x.id === id); if (!t) return;
+  const order = ['todo','progress','done'];
+  const i = order.indexOf(t.col);
+  const n = order[Math.min(Math.max(i + dir, 0), 2)];
+  if (n === t.col) return;
+  t.col = n; saveData(); renderBoard(); renderGraph();
+}
+
+function delT(id) { data.tasks = data.tasks.filter(t => t.id !== id); saveData(); renderBoard(); renderGraph(); }
+
+// ===== Graph =====
+function renderGraph() {
+  const canvas = document.getElementById('graphCanvas');
+  const wrap = document.getElementById('graphWrap');
+  const W = canvas.width = wrap.clientWidth || 800;
+  const H = canvas.height = wrap.clientHeight || 400;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const pos = {}, all = [];
+  data.notes.forEach((n,i) => { const a=i*2.2; pos['n'+n.id]={x:W/2+Math.cos(a)*140,y:H/2+Math.sin(a)*110,label:n.title,type:'note',id:n.id}; all.push(pos['n'+n.id]); });
+  data.tasks.forEach((t,i) => { const a=i*1.8+0.5; pos['t'+t.id]={x:W/2+Math.cos(a)*190,y:H/2+Math.sin(a)*140,label:t.title,type:'task',id:t.id}; all.push(pos['t'+t.id]); });
+  data.links.forEach(l => { const s=pos['n'+l.s]||pos['t'+l.s],te=pos['n'+l.t]||pos['t'+l.t]; if(s&&te){ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.quadraticCurveTo((s.x+te.x)/2,(s.y+te.y)/2-15,te.x,te.y);ctx.strokeStyle='rgba(139,92,246,0.25)';ctx.lineWidth=1.5;ctx.stroke()} });
+  all.forEach(nd => {
+    const r=nd.type==='note'?24:18,c=nd.type==='note'?'#8B5CF6':'#F59E0B';
+    const g=ctx.createRadialGradient(nd.x,nd.y,0,nd.x,nd.y,r*2); g.addColorStop(0,c+'20'); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(nd.x,nd.y,r*2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(nd.x,nd.y,r,0,Math.PI*2); ctx.fillStyle=c+'15'; ctx.fill(); ctx.strokeStyle=c; ctx.lineWidth=1.5; ctx.stroke();
+    const label=nd.label.length>8?nd.label.slice(0,8)+'..':nd.label; ctx.fillStyle='#c8c8d0'; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center'; ctx.fillText(label,nd.x,nd.y+3);
+  });
+}
+
+// ===== Search =====
+function doSearch(q) {
+  const r = document.getElementById('searchRes');
+  if (!q.trim()) { r.innerHTML = ''; return; }
+  const lq = q.toLowerCase(), found = [];
+  data.notes.forEach(n => { if (n.title.toLowerCase().includes(lq) || n.content.toLowerCase().includes(lq)) found.push({...n,_t:'note'}); });
+  data.tasks.forEach(t => { if (t.title.toLowerCase().includes(lq) || t.desc.toLowerCase().includes(lq)) found.push({...t,_t:'task'}); });
+  if (!found.length) { r.innerHTML = '<p style="color:var(--text2);text-align:center;font-size:.85rem;padding:12px">Nothing</p>'; return; }
+  r.innerHTML = found.map(item => {
+    if (item._t === 'note') {
+      const idx = data.notes.indexOf(item);
+      return `<div class="sri" onclick="showTab('notes');selN(${idx})"><div class="ic n">N</div><div class="inf"><div class="t">${item.title}</div><div class="s">${item.content.slice(0,50)}</div></div><span class="tag">Note</span></div>`;
+    }
+    return `<div class="sri" onclick="showTab('board')"><div class="ic t">T</div><div class="inf"><div class="t">${item.title}</div><div class="s">${item.desc||''}</div></div><span class="tag">Task</span></div>`;
+  }).join('');
+}
+
+// ===== Tabs =====
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.textContent.trim().toLowerCase().includes(tab.slice(0,3))));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-'+tab));
+  if (tab === 'graph') setTimeout(renderGraph, 50);
+  if (tab === 'board') setTimeout(renderBoard, 10);
+  if (tab === 'notes') setTimeout(renderNotes, 10);
+}
+
+// Fix tab detection
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const map = { Notes:'notes', Board:'board', Graph:'graph', Search:'search' };
+    const key = Object.keys(map).find(k => t.textContent.includes(k));
+    if (key) showTab(map[key]);
+  });
+});
+
+// ===== Export/Import =====
+function saveToFile() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'planify-backup.json';
+  a.click();
+}
+
+function loadFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const d = JSON.parse(reader.result);
+        if (d.notes && d.tasks) { data = d; saveData(); renderNotes(); renderBoard(); renderGraph(); }
+      } catch(_) { alert('Invalid file'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ===== Init =====
+renderNotes(); renderBoard(); renderGraph();
+window.addEventListener('resize', () => { const p = document.getElementById('panel-graph'); if (p.classList.contains('active')) renderGraph(); });
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
