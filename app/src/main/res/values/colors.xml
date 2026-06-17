@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="planify_purple">#FF7C4DFF</color>
+    <color name="planify_teal">#FF00BFA5</color>
+    <color name="planify_orange">#FFFF6D00</color>
+    <color name="status_todo">#FF64B5F6</color>
+    <color name="status_in_progress">#FFFFB74D</color>
+    <color name="status_done">#FF81C784</color>
+    <color name="seed">#FF7C4DFF</color>
+</resources>

@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planify — Notes, Tasks, Graph</title>
+    <meta name="description" content="Planify is a powerful offline note-taking and task management app for Android with a beautiful graph view.">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --purple: #7C4DFF;
+            --teal: #00BFA5;
+            --orange: #FF6D00;
+            --bg: #0D0D1A;
+            --surface: #1A1A2E;
+            --card: #16213E;
+            --text: #E8E8F0;
+            --text-secondary: #9090A8;
+            --border: rgba(124, 77, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        #graph-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 16px 0;
+            background: rgba(13, 13, 26, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--purple);
+            text-decoration: none;
+        }
+        .logo span { color: var(--text); }
+        .nav-links { display: flex; gap: 32px; align-items: center; }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding-top: 80px;
+        }
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .hero-text h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, var(--purple), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-text p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 480px;
+        }
+        .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: var(--purple);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #915FFF;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(124, 77, 255, 0.4);
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover {
+            background: rgba(124, 77, 255, 0.1);
+            border-color: var(--purple);
+        }
+
+        /* Hero mockup */
+        .hero-mockup {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+        .mockup-frame {
+            width: 100%;
+            max-width: 480px;
+            border-radius: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+        }
+        .mockup-frame .mockup-header {
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mockup-frame .mockup-header span {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--purple);
+        }
+        .mockup-frame .mockup-dots {
+            display: flex;
+            gap: 6px;
+        }
+        .mockup-frame .mockup-dots div {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+        .mockup-frame .mockup-dots div:nth-child(1) { background: #FF5F57; }
+        .mockup-frame .mockup-dots div:nth-child(2) { background: #FEBC2E; }
+        .mockup-frame .mockup-dots div:nth-child(3) { background: #28C840; }
+
+        .mockup-canvas {
+            padding: 24px;
+            min-height: 380px;
+            position: relative;
+        }
+        .mockup-node {
+            position: absolute;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.3s;
+            animation: float 4s ease-in-out infinite;
+        }
+        .mockup-node:hover { transform: scale(1.1); }
+        .mockup-node.purple { background: rgba(124,77,255,0.2); border: 2px solid var(--purple); }
+        .mockup-node.orange { background: rgba(255,109,0,0.2); border: 2px solid var(--orange); }
+        .mockup-node.teal { background: rgba(0,191,165,0.2); border: 2px solid var(--teal); }
+        .mockup-node.n1 { top: 30px; left: 30px; animation-delay: 0s; }
+        .mockup-node.n2 { top: 80px; right: 50px; animation-delay: 0.5s; }
+        .mockup-node.n3 { bottom: 60px; left: 70px; animation-delay: 1s; }
+        .mockup-node.n4 { bottom: 40px; right: 40px; animation-delay: 1.5s; }
+        .mockup-node.n5 { top: 150px; left: 120px; animation-delay: 0.2s; }
+
+        .mockup-edge {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(90deg, var(--purple), transparent);
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Features */
+        .features {
+            padding: 100px 0;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 60px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+        .feature-card {
+            padding: 32px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--purple);
+            box-shadow: 0 12px 40px rgba(124,77,255,0.15);
+        }
+        .feature-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .feature-icon.purple { background: rgba(124,77,255,0.15); color: var(--purple); }
+        .feature-icon.teal { background: rgba(0,191,165,0.15); color: var(--teal); }
+        .feature-icon.orange { background: rgba(255,109,0,0.15); color: var(--orange); }
+        .feature-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Showcase */
+        .showcase {
+            padding: 80px 0;
+        }
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px;
+            align-items: center;
+        }
+        .showcase-item {
+            padding: 40px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+        .showcase-item h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .showcase-item p {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        .showcase-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+        .showcase-tag.purple { background: rgba(124,77,255,0.15); color: var(--purple); }
+        .showcase-tag.teal { background: rgba(0,191,165,0.15); color: var(--teal); }
+        .showcase-tag.orange { background: rgba(255,109,0,0.15); color: var(--orange); }
+
+        /* Download */
+        .download {
+            padding: 100px 0;
+            text-align: center;
+        }
+        .download-box {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            background: linear-gradient(135deg, var(--card), var(--surface));
+            border-radius: 24px;
+            border: 1px solid var(--border);
+        }
+        .download-box h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .download-box p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        .download-info {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+        }
+        .download-info div {
+            text-align: center;
+        }
+        .download-info .num {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--purple);
+        }
+        .download-info .label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 48px;
+            background: var(--purple);
+            color: white;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.25s;
+        }
+        .btn-download:hover {
+            background: #915FFF;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(124,77,255,0.5);
+        }
+        .btn-download svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        footer a { color: var(--purple); text-decoration: none; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+            .hero-text h1 { font-size: 2.5rem; }
+            .hero-mockup { order: -1; }
+            .features-grid { grid-template-columns: 1fr; }
+            .showcase-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .hero-text h1 { font-size: 2rem; }
+            .nav-links { display: none; }
+            .download-box { padding: 40px 24px; }
+        }
+
+        /* Utility */
+        .text-gradient {
+            background: linear-gradient(135deg, var(--purple), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="graph-bg"></canvas>
+
+    <nav>
+        <div class="container">
+            <a href="#" class="logo">Planify<span>.</span></a>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#showcase">Showcase</a>
+                <a href="#download">Download</a>
+                <a href="https://github.com/yourusername/planify" target="_blank" style="color:var(--purple)">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Your thoughts,<br>connected.</h1>
+                    <p>Planify is a powerful offline-first note-taking and task management app. Write in markdown, link ideas visually, and track tasks — all in one beautiful graph.</p>
+                    <div class="hero-buttons">
+                        <a href="#download" class="btn btn-primary">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download APK
+                        </a>
+                        <a href="#features" class="btn btn-secondary">Learn More</a>
+                    </div>
+                    <p style="margin-top: 16px; font-size: 0.85rem; color: var(--text-secondary);">
+                        No ads · No internet required · Open source
+                    </p>
+                </div>
+                <div class="hero-mockup">
+                    <div class="mockup-frame">
+                        <div class="mockup-header">
+                            <span>Planify</span>
+                            <div class="mockup-dots"><div></div><div></div><div></div></div>
+                        </div>
+                        <div class="mockup-canvas">
+                            <div class="mockup-node purple n1">Meeting<br>Notes</div>
+                            <div class="mockup-node orange n2">Design<br>Task</div>
+                            <div class="mockup-node teal n3">Ideas</div>
+                            <div class="mockup-node purple n4">API<br>Docs</div>
+                            <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0.25">
+                                <line x1="70" y1="70" x2="340" y2="120" stroke="#7C4DFF" stroke-width="2" stroke-dasharray="6,4"/>
+                                <line x1="70" y1="70" x2="150" y2="260" stroke="#00BFA5" stroke-width="2" stroke-dasharray="6,4"/>
+                                <line x1="340" y1="120" x2="390" y2="290" stroke="#FF6D00" stroke-width="2" stroke-dasharray="6,4"/>
+                                <line x1="70" y1="70" x2="390" y2="290" stroke="#7C4DFF" stroke-width="1.5" stroke-dasharray="4,4"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title">Everything you need</h2>
+            <p class="section-subtitle">One app to write, organize, and connect your ideas.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon purple">✍️</div>
+                    <h3>Markdown Notes</h3>
+                    <p>Write in Markdown with live preview. Link notes together with [[wikilinks]] just like Obsidian.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon teal">🔗</div>
+                    <h3>Graph View</h3>
+                    <p>See all your notes and tasks as an interactive network. Drag nodes, create connections visually.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon orange">📋</div>
+                    <h3>Kanban Board</h3>
+                    <p>Organize tasks in To Do, In Progress, Done columns. Move tasks with a single tap.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon purple">📱</div>
+                    <h3>Tablet Optimized</h3>
+                    <p>Beautiful adaptive UI for your 2200×1440 tablet. Supports keyboard shortcuts and landscape.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon teal">🌙</div>
+                    <h3>Dark & Light Themes</h3>
+                    <p>Automatic dark/light theme switching. Dynamic color support on Android 12+.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon orange">📡</div>
+                    <h3>100% Offline</h3>
+                    <p>Your data never leaves your device. No account, no internet, no tracking. Pure privacy.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="showcase" class="showcase">
+        <div class="container">
+            <h2 class="section-title">How it works</h2>
+            <p class="section-subtitle">Three views, one workflow.</p>
+            <div class="showcase-grid">
+                <div class="showcase-item">
+                    <h3>📝 Notes</h3>
+                    <p>Full markdown editor with syntax highlighting and live preview. Use <code>[[wikilinks]]</code> to connect notes together, creating a personal knowledge graph.</p>
+                    <span class="showcase-tag purple">Markdown</span>
+                    <span class="showcase-tag teal">Wikilinks</span>
+                    <span class="showcase-tag orange">Live Preview</span>
+                </div>
+                <div class="showcase-item">
+                    <h3>🔗 Graph</h3>
+                    <p>Visual network of all your notes and tasks. Drag nodes to rearrange, zoom in and out, and draw connections by tapping source then target.</p>
+                    <span class="showcase-tag purple">Drag & Drop</span>
+                    <span class="showcase-tag teal">Zoom</span>
+                    <span class="showcase-tag orange">Visual Links</span>
+                </div>
+                <div class="showcase-item">
+                    <h3>📊 Board</h3>
+                    <p>Kanban-style task board. Add tasks, track progress, move between columns. Every task is also a node in your graph.</p>
+                    <span class="showcase-tag purple">Kanban</span>
+                    <span class="showcase-tag teal">Drag Columns</span>
+                    <span class="showcase-tag orange">Progress</span>
+                </div>
+                <div class="showcase-item">
+                    <h3>🔍 Search</h3>
+                    <p>Full-text search across all notes and tasks. Results update as you type, grouped by type for quick navigation.</p>
+                    <span class="showcase-tag purple">Full-text</span>
+                    <span class="showcase-tag teal">Real-time</span>
+                    <span class="showcase-tag orange">Offline</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="download" class="download">
+        <div class="container">
+            <div class="download-box">
+                <h2>Get <span class="text-gradient">Planify</span></h2>
+                <p>Download the APK and install it on your Android tablet or phone. No Play Store required.</p>
+                <div class="download-info">
+                    <div><div class="num">4.2 MB</div><div class="label">App Size</div></div>
+                    <div><div class="num">1.0.0</div><div class="label">Version</div></div>
+                    <div><div class="num">API 26+</div><div class="label">Android 8+</div></div>
+                </div>
+                <a href="#" class="btn-download" onclick="alert('APK will be available after first build. Clone the repo and run ./gradlew assembleRelease')">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download APK
+                </a>
+                <p style="margin-top: 20px; font-size: 0.85rem;">
+                    <a href="https://github.com/yourusername/planify" style="color: var(--purple);">View source on GitHub</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Planify — Open source, built with Kotlin & Jetpack Compose. Made with ❤️.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Animated graph background
+        const canvas = document.getElementById('graph-bg');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const NODE_COUNT = 30;
+        const CONNECTION_DIST = 200;
+        const nodes = [];
+
+        for (let i = 0; i < NODE_COUNT; i++) {
+            nodes.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                radius: Math.random() * 3 + 1.5,
+                color: ['#7C4DFF', '#00BFA5', '#FF6D00'][Math.floor(Math.random() * 3)]
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                n.x += n.vx;
+                n.y += n.vy;
+                if (n.x < 0 || n.x > w) n.vx *= -1;
+                if (n.y < 0 || n.y > h) n.vy *= -1;
+
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[j].x - n.x;
+                    const dy = nodes[j].y - n.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < CONNECTION_DIST) {
+                        const alpha = (1 - dist / CONNECTION_DIST) * 0.3;
+                        ctx.beginPath();
+                        ctx.moveTo(n.x, n.y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.strokeStyle = `rgba(124, 77, 255, ${alpha})`;
+                        ctx.lineWidth = 0.8;
+                        ctx.stroke();
+                    }
+                }
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                ctx.fillStyle = n.color;
+                ctx.fill();
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+
+</body>
+</html>
