@@ -378,11 +378,10 @@ fun PlanifyApp(
                                     if (note != null) viewModel.openNote(note)
                                 }
                                 com.planify.app.data.LinkNodeType.TASK -> {
-                                    viewModel.openTaskEdit(
-                                        state.todoTasks.find { it.id == node.id }
-                                            ?: state.inProgressTasks.find { it.id == node.id }
-                                            ?: state.doneTasks.find { it.id == node.id }
-                                    )
+                                    val task = state.todoTasks.find { it.id == node.id }
+                                        ?: state.inProgressTasks.find { it.id == node.id }
+                                        ?: state.doneTasks.find { it.id == node.id }
+                                    if (task != null) viewModel.openTaskEdit(task)
                                 }
                             }
                         },

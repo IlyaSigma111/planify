@@ -285,8 +285,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            val noteResults = kotlinx.coroutines.flow.firstOrNull(repository.searchNotes(query)) ?: emptyList()
-            val taskResults = kotlinx.coroutines.flow.firstOrNull(repository.searchTasks(query)) ?: emptyList()
+            val noteResults = repository.searchNotes(query).first()
+            val taskResults = repository.searchTasks(query).first()
             _state.update { it.copy(searchResults = noteResults + taskResults) }
         }
     }

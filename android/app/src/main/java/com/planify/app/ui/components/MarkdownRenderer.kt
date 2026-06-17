@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -25,6 +26,7 @@ fun MarkdownText(
     modifier: Modifier = Modifier,
     onWikilinkClick: ((String) -> Unit)? = null
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
     val lines = markdown.split("\n")
     Column(modifier = modifier) {
         var i = 0
@@ -33,7 +35,7 @@ fun MarkdownText(
             when {
                 line.startsWith("### ") -> {
                     Text(
-                        text = parseInline(line.removePrefix("### "), onWikilinkClick),
+                        text = parseInline(line.removePrefix("### "), onWikilinkClick, primaryColor),
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -42,7 +44,7 @@ fun MarkdownText(
                 }
                 line.startsWith("## ") -> {
                     Text(
-                        text = parseInline(line.removePrefix("## "), onWikilinkClick),
+                        text = parseInline(line.removePrefix("## "), onWikilinkClick, primaryColor),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -51,7 +53,7 @@ fun MarkdownText(
                 }
                 line.startsWith("# ") -> {
                     Text(
-                        text = parseInline(line.removePrefix("# "), onWikilinkClick),
+                        text = parseInline(line.removePrefix("# "), onWikilinkClick, primaryColor),
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold
                         ),
@@ -60,7 +62,7 @@ fun MarkdownText(
                 }
                 line.startsWith("- ") || line.startsWith("* ") -> {
                     Text(
-                        text = parseInline("  \u2022 ${line.drop(2)}", onWikilinkClick),
+                        text = parseInline("  \u2022 ${line.drop(2)}", onWikilinkClick, primaryColor),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(start = 8.dp, top = 2.dp, bottom = 2.dp)
                     )
@@ -74,7 +76,7 @@ fun MarkdownText(
                         color = MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Text(
-                            text = parseInline(line.removePrefix("> "), onWikilinkClick),
+                            text = parseInline(line.removePrefix("> "), onWikilinkClick, primaryColor),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 fontStyle = FontStyle.Italic
                             ),
@@ -111,7 +113,7 @@ fun MarkdownText(
                 }
                 else -> {
                     Text(
-                        text = parseInline(line, onWikilinkClick),
+                        text = parseInline(line, onWikilinkClick, primaryColor),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(vertical = 2.dp)
                     )
@@ -124,7 +126,8 @@ fun MarkdownText(
 
 private fun parseInline(
     text: String,
-    onWikilinkClick: ((String) -> Unit)?
+    onWikilinkClick: ((String) -> Unit)?,
+    primaryColor: Color
 ): androidx.compose.ui.text.AnnotatedString {
     return buildAnnotatedString {
         var remaining = text
@@ -173,7 +176,7 @@ private fun parseInline(
                 "wikilink" -> {
                     val title = match.groupValues[1]
                     withStyle(SpanStyle(
-                        color = MaterialTheme.colorScheme.primary,
+                        color = primaryColor,
                         textDecoration = TextDecoration.Underline
                     )) {
                         append(title)
